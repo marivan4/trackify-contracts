@@ -6,7 +6,7 @@ import Navbar from '@/components/Navbar';
 import { Clipboard, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-const InstallationGuidePage = () => {
+const InstallationGuidePage: React.FC = () => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Comando copiado para a área de transferência');
@@ -144,7 +144,7 @@ const InstallationGuidePage = () => {
                     </pre>
                     <button 
                       className="absolute top-2 right-2 p-1 rounded-md hover:bg-gray-200"
-                      onClick={() => copyToClipboard('sudo mysql\nCREATE DATABASE tracking_system;\nCREATE USER \'tracking_user\'@\'localhost\' IDENTIFIED BY \'senha_segura\';\nGRANT ALL PRIVILEGES ON tracking_system.* TO \'tracking_user\'@\'localhost\';\nFLUSH PRIVILEGES;\nEXIT;')}
+                      onClick={() => copyToClipboard("sudo mysql\nCREATE DATABASE tracking_system;\nCREATE USER 'tracking_user'@'localhost' IDENTIFIED BY 'senha_segura';\nGRANT ALL PRIVILEGES ON tracking_system.* TO 'tracking_user'@'localhost';\nFLUSH PRIVILEGES;\nEXIT;")}
                       title="Copiar comando"
                     >
                       <Clipboard size={14} />
@@ -154,7 +154,7 @@ const InstallationGuidePage = () => {
                   <h3 className="text-lg font-semibold">2. Importar Estrutura do Banco</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
-                      mysql -u tracking_user -p tracking_system < estrutura.sql
+                      mysql -u tracking_user -p tracking_system {"<"} estrutura.sql
                     </pre>
                     <button 
                       className="absolute top-2 right-2 p-1 rounded-md hover:bg-gray-200"
