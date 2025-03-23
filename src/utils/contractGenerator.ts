@@ -227,33 +227,105 @@ export const getGeolocation = async (ip: string): Promise<string> => {
   }
 };
 
-// Function to send contract via WhatsApp (simulated)
+// Function to send contract via WhatsApp with retry functionality
 export const sendContractViaWhatsApp = async (phone: string, contractId: string): Promise<boolean> => {
-  try {
-    // Validate Brazilian phone number with country code
-    const phoneRegex = /^55\d{10,11}$/;
-    const cleanPhone = phone.replace(/\D/g, '');
+  // Maximum number of retry attempts
+  const MAX_RETRIES = 3;
+  // Delay between retries in milliseconds (5 seconds)
+  const RETRY_DELAY = 5000;
+  
+  // Validate and format Brazilian phone number
+  const validatePhoneNumber = (number: string): string => {
+    // Remove all non-numeric characters
+    const cleanPhone = number.replace(/\D/g, '');
     
-    if (!phoneRegex.test(cleanPhone)) {
-      throw new Error('Número de telefone inválido. Formato esperado: 5511987654321');
+    // Check if it starts with country code (55)
+    if (!cleanPhone.startsWith('55')) {
+      return `55${cleanPhone}`;
     }
     
-    // In a real application, this would call the WhatsApp API
-    // This is a simulated response
-    console.log(`Sending contract ${contractId} to phone ${cleanPhone}`);
-    
-    // API endpoint and data that would be used in a real scenario
+    return cleanPhone;
+  };
+  
+  // Perform the actual API call
+  const performApiCall = async (phoneNumber: string): Promise<Response> => {
     const apiUrl = 'https://evolutionapi.gpstracker-16.com.br/message/sendText/assas';
     const apiKey = 'A80892194E8E-401D-BDC2-763C9430A09E';
-    const instance = 'assas';
     
     const message = `📋 Novo Contrato Disponível\nClique para assinar: https://example.com/contracts/${contractId}\nVálido até: 24h`;
     
-    // Simulated successful response
-    return true;
+    // Log the request details for debugging
+    console.log('WhatsApp API Request:', {
+      url: apiUrl,
+      phone: phoneNumber,
+      message
+    });
+    
+    // Make the API call
+    return fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': apiKey
+      },
+      body: JSON.stringify({
+        number: phoneNumber,
+        text: message
+      })
+    });
+  };
+  
+  try {
+    // Validate Brazilian phone number with regex
+    const phoneRegex = /^55\d{10,11}$/;
+    const formattedPhone = validatePhoneNumber(phone);
+    
+    if (!phoneRegex.test(formattedPhone)) {
+      throw new Error('Número de telefone inválido. Formato esperado: 5511987654321');
+    }
+    
+    // Implement retry logic
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        console.log(`Tentativa ${attempt} de envio para WhatsApp: ${formattedPhone}`);
+        
+        const response = await performApiCall(formattedPhone);
+        const responseData = await response.json();
+        
+        // Log the API response for debugging
+        console.log('WhatsApp API Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: responseData
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        }
+        
+        // Success, exit retry loop
+        toast.success('Contrato enviado por WhatsApp com sucesso');
+        return true;
+        
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.error(`Erro na tentativa ${attempt}:`, lastError);
+        
+        // If this isn't the last attempt, wait before retrying
+        if (attempt < MAX_RETRIES) {
+          console.log(`Aguardando ${RETRY_DELAY/1000} segundos antes de tentar novamente...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        }
+      }
+    }
+    
+    // If we get here, all retries failed
+    throw lastError || new Error('Falha ao enviar mensagem após várias tentativas');
     
   } catch (error) {
-    console.error('Error sending WhatsApp message:', error);
+    console.error('Erro ao enviar mensagem WhatsApp:', error);
     toast.error(`Erro ao enviar mensagem: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     return false;
   }
