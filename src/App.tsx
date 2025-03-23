@@ -8,17 +8,20 @@ import Index from "./pages/Index";
 import ContractPage from "./pages/ContractPage";
 import NotFound from "./pages/NotFound";
 
+// Create a client
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <BrowserRouter>
+        <Toaster />
+        <Sonner />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/new-contract" element={<ContractPage />} />
+          <Route path="/contracts" element={<NotFound />} />
+          <Route path="/tracking" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
