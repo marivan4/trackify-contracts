@@ -1,8 +1,7 @@
-
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
+import { sendContractViaWhatsApp as sendWhatsApp } from './whatsappService';
 
-// Define the contract data interface
 export interface ContractData {
   // Client data
   document: string; // CPF or CNPJ
@@ -34,34 +33,27 @@ export interface ContractData {
   geolocation?: string;
 }
 
-// Function to generate a contract PDF
 export const generateContractPdf = async (data: ContractData): Promise<Blob> => {
   try {
-    // Create a new PDF document (A4 format)
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
     });
     
-    // Set font and size
     doc.setFont('helvetica');
     
-    // Add header
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.text('CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE RASTREAMENTO VEICULAR', 105, 20, { align: 'center' });
     
-    // Add date
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(`Data de Emissão: ${data.registrationDate || new Date().toLocaleDateString('pt-BR')}`, 105, 30, { align: 'center' });
     
-    // Line separator
     doc.setDrawColor(210, 210, 210);
     doc.line(20, 35, 190, 35);
     
-    // Client data section
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Dados do Cliente:', 20, 45);
@@ -74,7 +66,6 @@ export const generateContractPdf = async (data: ContractData): Promise<Blob> => 
     doc.text(`Email: ${data.email}`, 20, 76);
     doc.text(`Endereço: ${data.street}, ${data.number}, ${data.neighborhood}, ${data.city} - ${data.state}, ${data.zipCode}`, 20, 83);
     
-    // Vehicle data section
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Dados do Veículo:', 20, 98);
@@ -84,7 +75,6 @@ export const generateContractPdf = async (data: ContractData): Promise<Blob> => 
     doc.text(`Modelo: ${data.vehicleModel}`, 20, 108);
     doc.text(`Placa: ${data.licensePlate}`, 20, 115);
     
-    // Tracker data section
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Dados do Rastreador:', 20, 130);
@@ -95,7 +85,6 @@ export const generateContractPdf = async (data: ContractData): Promise<Blob> => 
     doc.text(`IMEI: ${data.imei}`, 20, 147);
     doc.text(`Local de Instalação: ${data.installationLocation}`, 20, 154);
     
-    // Terms and conditions section
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Termos e Condições:', 20, 169);
@@ -116,7 +105,6 @@ export const generateContractPdf = async (data: ContractData): Promise<Blob> => 
       yPos += 7;
     }
     
-    // Signature section
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Assinatura:', 20, 220);
@@ -133,11 +121,9 @@ export const generateContractPdf = async (data: ContractData): Promise<Blob> => 
       doc.text(`Localização: ${data.geolocation}`, 20, 244);
     }
     
-    // Digital signature line
     doc.line(20, 260, 100, 260);
     doc.text(`${data.name}`, 60, 270, { align: 'center' });
     
-    // Convert the PDF to a blob
     const pdfBlob = doc.output('blob');
     return pdfBlob;
     
@@ -148,23 +134,18 @@ export const generateContractPdf = async (data: ContractData): Promise<Blob> => 
   }
 };
 
-// Function to save PDF to disk
 export const savePdf = async (pdfBlob: Blob, fileName: string): Promise<void> => {
   try {
-    // Create a URL for the blob
     const url = URL.createObjectURL(pdfBlob);
     
-    // Create a link element
     const link = document.createElement('a');
     link.href = url;
     link.download = fileName;
     
-    // Append to body, click, and remove
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    // Clean up by revoking the object URL
     setTimeout(() => URL.revokeObjectURL(url), 100);
     
   } catch (error) {
@@ -174,13 +155,10 @@ export const savePdf = async (pdfBlob: Blob, fileName: string): Promise<void> =>
   }
 };
 
-// Function to print PDF
 export const printPdf = async (pdfBlob: Blob): Promise<void> => {
   try {
-    // Create a URL for the blob
     const url = URL.createObjectURL(pdfBlob);
     
-    // Open in a new window and print
     const printWindow = window.open(url);
     
     if (printWindow) {
@@ -198,7 +176,6 @@ export const printPdf = async (pdfBlob: Blob): Promise<void> => {
   }
 };
 
-// Function to get client IP (simplified - would require backend in real app)
 export const getClientIP = async (): Promise<string> => {
   try {
     const response = await fetch('https://api.ipify.org?format=json');
@@ -210,7 +187,6 @@ export const getClientIP = async (): Promise<string> => {
   }
 };
 
-// Function to get approximate geolocation based on IP
 export const getGeolocation = async (ip: string): Promise<string> => {
   try {
     const response = await fetch(`https://ipapi.co/${ip}/json/`);
@@ -227,106 +203,9 @@ export const getGeolocation = async (ip: string): Promise<string> => {
   }
 };
 
-// Function to send contract via WhatsApp with retry functionality
-export const sendContractViaWhatsApp = async (phone: string, contractId: string): Promise<boolean> => {
-  // Maximum number of retry attempts
-  const MAX_RETRIES = 3;
-  // Delay between retries in milliseconds (5 seconds)
-  const RETRY_DELAY = 5000;
-  
-  // Validate and format Brazilian phone number
-  const validatePhoneNumber = (number: string): string => {
-    // Remove all non-numeric characters
-    const cleanPhone = number.replace(/\D/g, '');
-    
-    // Check if it starts with country code (55)
-    if (!cleanPhone.startsWith('55')) {
-      return `55${cleanPhone}`;
-    }
-    
-    return cleanPhone;
-  };
-  
-  // Perform the actual API call
-  const performApiCall = async (phoneNumber: string): Promise<Response> => {
-    const apiUrl = 'https://evolutionapi.gpstracker-16.com.br/message/sendText/assas';
-    const apiKey = 'A80892194E8E-401D-BDC2-763C9430A09E';
-    
-    const message = `📋 Novo Contrato Disponível\nClique para assinar: https://example.com/contracts/${contractId}\nVálido até: 24h`;
-    
-    // Log the request details for debugging
-    console.log('WhatsApp API Request:', {
-      url: apiUrl,
-      phone: phoneNumber,
-      message
-    });
-    
-    // Make the API call
-    return fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': apiKey
-      },
-      body: JSON.stringify({
-        number: phoneNumber,
-        text: message
-      })
-    });
-  };
-  
-  try {
-    // Validate Brazilian phone number with regex
-    const phoneRegex = /^55\d{10,11}$/;
-    const formattedPhone = validatePhoneNumber(phone);
-    
-    if (!phoneRegex.test(formattedPhone)) {
-      throw new Error('Número de telefone inválido. Formato esperado: 5511987654321');
-    }
-    
-    // Implement retry logic
-    let lastError: Error | null = null;
-    
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        console.log(`Tentativa ${attempt} de envio para WhatsApp: ${formattedPhone}`);
-        
-        const response = await performApiCall(formattedPhone);
-        const responseData = await response.json();
-        
-        // Log the API response for debugging
-        console.log('WhatsApp API Response:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: responseData
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API Error: ${response.status} ${response.statusText}`);
-        }
-        
-        // Success, exit retry loop
-        toast.success('Contrato enviado por WhatsApp com sucesso');
-        return true;
-        
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        console.error(`Erro na tentativa ${attempt}:`, lastError);
-        
-        // If this isn't the last attempt, wait before retrying
-        if (attempt < MAX_RETRIES) {
-          console.log(`Aguardando ${RETRY_DELAY/1000} segundos antes de tentar novamente...`);
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        }
-      }
-    }
-    
-    // If we get here, all retries failed
-    throw lastError || new Error('Falha ao enviar mensagem após várias tentativas');
-    
-  } catch (error) {
-    console.error('Erro ao enviar mensagem WhatsApp:', error);
-    toast.error(`Erro ao enviar mensagem: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-    return false;
-  }
+export const sendContractViaWhatsApp = async (
+  phone: string, 
+  contractId: string
+): Promise<boolean> => {
+  return await sendWhatsApp(phone, contractId);
 };

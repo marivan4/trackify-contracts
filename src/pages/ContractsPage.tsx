@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { 
   Table, 
@@ -81,9 +81,9 @@ const ContractsPage = () => {
     contract.licensePlate.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  const handleViewContract = (contract: ContractData) => {
-    setSelectedContract(contract);
-    setIsViewDialogOpen(true);
+  const handleViewContract = (contract: ContractData, index: number) => {
+    // Navigate to the contract view page instead of opening a dialog
+    navigate(`/contracts/${index + 1}`);
   };
   
   const handleEditContract = (contract: ContractData) => {
@@ -157,7 +157,7 @@ const ContractsPage = () => {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => handleViewContract(contract)}
+                          onClick={() => handleViewContract(contract, index)}
                           title="Visualizar contrato"
                         >
                           <Eye size={16} />
@@ -193,133 +193,6 @@ const ContractsPage = () => {
           </Table>
         </div>
       </div>
-      
-      {/* Contract View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Detalhes do Contrato</DialogTitle>
-          </DialogHeader>
-          
-          {selectedContract && (
-            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Dados do Cliente</h3>
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Nome</span>
-                        <span>{selectedContract.name}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">CPF/CNPJ</span>
-                        <span>{selectedContract.document}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Email</span>
-                        <span>{selectedContract.email}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Telefone</span>
-                        <span>{selectedContract.phone}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Endereço</h3>
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Logradouro</span>
-                        <span>{selectedContract.street}, {selectedContract.number}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Bairro</span>
-                        <span>{selectedContract.neighborhood}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Cidade/Estado</span>
-                        <span>{selectedContract.city} - {selectedContract.state}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">CEP</span>
-                        <span>{selectedContract.zipCode}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Dados do Veículo</h3>
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Modelo</span>
-                        <span>{selectedContract.vehicleModel}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Placa</span>
-                        <span>{selectedContract.licensePlate}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Dados do Rastreador</h3>
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Modelo</span>
-                        <span>{selectedContract.trackerModel}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">IMEI</span>
-                        <span>{selectedContract.imei}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Local de Instalação</span>
-                        <span>{selectedContract.installationLocation}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Informações de Assinatura</h3>
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Data da Assinatura</span>
-                        <span>{selectedContract.signatureDate}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Endereço IP</span>
-                        <span>{selectedContract.ipAddress}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Localização</span>
-                        <span>{selectedContract.geolocation}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsViewDialogOpen(false)}
-            >
-              Fechar
-            </Button>
-            <Button 
-              onClick={() => selectedContract && handleDownloadPdf(selectedContract)}
-            >
-              Baixar PDF
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

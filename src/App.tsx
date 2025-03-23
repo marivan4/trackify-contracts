@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import ContractPage from "./pages/ContractPage";
 import ContractsPage from "./pages/ContractsPage";
+import ContractViewPage from "./pages/ContractViewPage";
 import TrackingPage from "./pages/TrackingPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/new-contract" element={<ContractPage />} />
           <Route path="/contracts" element={<ContractsPage />} />
+          <Route path="/contracts/:contractId" element={<ContractViewPage />} />
           <Route path="/tracking" element={<TrackingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<NotFound />} />
