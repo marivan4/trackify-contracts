@@ -1,43 +1,25 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from 'sonner';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
-const LoginPage = () => {
-  const navigate = useNavigate();
+const LoginPage: React.FC = () => {
+  const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
-      toast.error('Por favor, preencha todos os campos');
       return;
     }
     
-    setLoading(true);
-    
-    try {
-      // In a real app, this would be an API call to your authentication service
-      // For demo purposes, we'll simulate a successful login
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simulate login success
-      toast.success('Login realizado com sucesso');
-      navigate('/'); // Redirect to dashboard after login
-    } catch (error) {
-      console.error('Erro ao fazer login:', error);
-      toast.error('Erro ao fazer login. Verifique suas credenciais');
-    } finally {
-      setLoading(false);
-    }
+    await login(email, password);
   };
   
   return (
@@ -104,9 +86,25 @@ const LoginPage = () => {
               </div>
             </div>
             
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Entrando...' : 'Entrar'}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
+            
+            <div className="text-sm text-center text-gray-600">
+              <p>Credenciais de teste:</p>
+              <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                <div className="bg-gray-100 p-2 rounded">
+                  <p><strong>Admin:</strong></p>
+                  <p>admin@exemplo.com</p>
+                  <p>admin123</p>
+                </div>
+                <div className="bg-gray-100 p-2 rounded">
+                  <p><strong>Cliente:</strong></p>
+                  <p>cliente@exemplo.com</p>
+                  <p>cliente123</p>
+                </div>
+              </div>
+            </div>
           </form>
         </div>
         
