@@ -83,9 +83,9 @@ const InstallationGuidePage = () => {
                   <h3 className="text-lg font-semibold">2. Instalar PHP 8.1</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
-                      sudo apt install software-properties-common -y{'\n'}
-                      sudo add-apt-repository ppa:ondrej/php -y{'\n'}
-                      sudo apt update{'\n'}
+                      sudo apt install software-properties-common -y{"\n"}
+                      sudo add-apt-repository ppa:ondrej/php -y{"\n"}
+                      sudo apt update{"\n"}
                       sudo apt install php8.1 php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath -y
                     </pre>
                     <button 
@@ -100,7 +100,7 @@ const InstallationGuidePage = () => {
                   <h3 className="text-lg font-semibold">3. Instalar MySQL</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
-                      sudo apt install mysql-server -y{'\n'}
+                      sudo apt install mysql-server -y{"\n"}
                       sudo mysql_secure_installation
                     </pre>
                     <button 
@@ -115,8 +115,8 @@ const InstallationGuidePage = () => {
                   <h3 className="text-lg font-semibold">4. Instalar Node.js</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
-                      curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -{'\n'}
-                      sudo apt install nodejs -y{'\n'}
+                      curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -{"\n"}
+                      sudo apt install nodejs -y{"\n"}
                       node --version
                     </pre>
                     <button 
@@ -135,11 +135,11 @@ const InstallationGuidePage = () => {
                   <h3 className="text-lg font-semibold">1. Criar Banco de Dados</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
-                      sudo mysql{'\n'}
-                      CREATE DATABASE tracking_system;{'\n'}
-                      CREATE USER 'tracking_user'@'localhost' IDENTIFIED BY 'senha_segura';{'\n'}
-                      GRANT ALL PRIVILEGES ON tracking_system.* TO 'tracking_user'@'localhost';{'\n'}
-                      FLUSH PRIVILEGES;{'\n'}
+                      sudo mysql{"\n"}
+                      CREATE DATABASE tracking_system;{"\n"}
+                      CREATE USER 'tracking_user'@'localhost' IDENTIFIED BY 'senha_segura';{"\n"}
+                      GRANT ALL PRIVILEGES ON tracking_system.* TO 'tracking_user'@'localhost';{"\n"}
+                      FLUSH PRIVILEGES;{"\n"}
                       EXIT;
                     </pre>
                     <button 
@@ -168,8 +168,8 @@ const InstallationGuidePage = () => {
                   <h3 className="text-lg font-semibold">3. Configurar Servidor Web</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
-                      sudo apt install nginx -y{'\n'}
-                      sudo systemctl start nginx{'\n'}
+                      sudo apt install nginx -y{"\n"}
+                      sudo systemctl start nginx{"\n"}
                       sudo systemctl enable nginx
                     </pre>
                     <button 
