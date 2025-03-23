@@ -43,13 +43,14 @@ export const sendWhatsAppMessage = async (
   text: string
 ): Promise<boolean> => {
   // Validate phone number
-  if (!validatePhoneNumber(formatPhoneNumber(phone))) {
+  const formattedPhone = formatPhoneNumber(phone);
+  if (!validatePhoneNumber(formattedPhone)) {
     console.error('Invalid phone number format', phone);
     toast.error('Número de telefone inválido');
     return false;
   }
   
-  const formattedPhone = formatPhoneNumber(phone);
+  // Corrected URL - removed double https://
   const apiUrl = 'https://evolutionapi.gpstracker-16.com.br/message/sendText/assas';
   const apiKey = 'A80892194E8E-401D-BDC2-763C9430A09E';
   
@@ -85,6 +86,7 @@ export const sendWhatsAppMessage = async (
       
       if (response.ok) {
         console.log('WhatsApp message sent successfully');
+        toast.success('Mensagem WhatsApp enviada com sucesso');
         success = true;
         return true;
       } else {

@@ -10,6 +10,8 @@ import ContractsPage from "./pages/ContractsPage";
 import ContractViewPage from "./pages/ContractViewPage";
 import TrackingPage from "./pages/TrackingPage";
 import LoginPage from "./pages/LoginPage";
+import UserManagementPage from "./pages/UserManagementPage";
+import InstallationGuidePage from "./pages/InstallationGuidePage";
 import NotFound from "./pages/NotFound";
 
 // Create a client
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/contracts/:contractId" element={<ContractViewPage />} />
           <Route path="/tracking" element={<TrackingPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/users" element={<UserManagementPage />} />
+          <Route path="/installation" element={<InstallationGuidePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, Settings, FileText } from "lucide-react";
 
 const Navbar = () => {
   const location = useLocation();
@@ -40,6 +40,12 @@ const Navbar = () => {
             </Link>
             <Link to="/tracking" className="text-sm font-medium transition-colors hover:text-primary">
               Rastreamento
+            </Link>
+            <Link to="/users" className="text-sm font-medium transition-colors hover:text-primary">
+              Usuários
+            </Link>
+            <Link to="/installation" className="text-sm font-medium transition-colors hover:text-primary">
+              Instalação
             </Link>
             <Button asChild variant="default" className="ml-4">
               <Link to="/new-contract">Novo Contrato</Link>
@@ -81,6 +87,22 @@ const Navbar = () => {
               onClick={() => setMobileMenuOpen(false)}
             >
               Rastreamento
+            </Link>
+            <Link 
+              to="/users" 
+              className="text-sm font-medium py-2 px-3 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <User size={16} />
+              Usuários
+            </Link>
+            <Link 
+              to="/installation" 
+              className="text-sm font-medium py-2 px-3 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Settings size={16} />
+              Instalação
             </Link>
             <Button 
               asChild 
