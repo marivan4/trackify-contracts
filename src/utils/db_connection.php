@@ -1,4 +1,3 @@
-
 <?php
 /**
  * Database connection file for Vehicle Tracking System
@@ -7,8 +6,8 @@
  * and provides utility functions for database operations.
  * 
  * @author Vehicle Tracking System
- * @version 1.0
- * @date 2025-03-23
+ * @version 1.1
+ * @date 2025-04-09
  */
 
 // Database configuration
@@ -38,9 +37,42 @@ function db_connect(): ?PDO {
         $pdo = new PDO($dsn, $db_config['username'], $db_config['password'], $db_config['options']);
         return $pdo;
     } catch (PDOException $e) {
-        // Log the error message
+        // Log the error message with more details
         error_log("Database connection failed: " . $e->getMessage());
+        error_log("Connection details (excl. password): host={$db_config['host']}, user={$db_config['username']}, db={$db_config['database']}");
         return null;
+    }
+}
+
+/**
+ * Tests the database connection
+ * 
+ * @return array Connection test results with status and message
+ */
+function db_test_connection(): array {
+    try {
+        $pdo = db_connect();
+        
+        if (!$pdo) {
+            return [
+                'status' => false,
+                'message' => 'Não foi possível estabelecer conexão com o banco de dados.'
+            ];
+        }
+        
+        // Try a simple query to verify the connection is working properly
+        $stmt = $pdo->query('SELECT 1');
+        $stmt->fetch();
+        
+        return [
+            'status' => true,
+            'message' => 'Conexão com o banco de dados estabelecida com sucesso.'
+        ];
+    } catch (PDOException $e) {
+        return [
+            'status' => false,
+            'message' => 'Erro ao conectar ao banco de dados: ' . $e->getMessage()
+        ];
     }
 }
 
@@ -64,6 +96,8 @@ function db_query(string $sql, array $params = []): array|false {
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         error_log("Query execution failed: " . $e->getMessage());
+        error_log("SQL: $sql");
+        error_log("Parameters: " . json_encode($params));
         return false;
     }
 }

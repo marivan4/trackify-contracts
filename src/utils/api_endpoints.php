@@ -1,4 +1,3 @@
-
 <?php
 /**
  * API Endpoints for Vehicle Tracking System
@@ -6,8 +5,8 @@
  * This file defines the RESTful API endpoints for the tracking system
  * 
  * @author Vehicle Tracking System
- * @version 1.0
- * @date 2025-03-23
+ * @version 1.1
+ * @date 2025-04-09
  */
 
 // Include the database connection file
@@ -71,8 +70,8 @@ function respond_error($message, $code = 400) {
     exit;
 }
 
-// Check authentication for all endpoints except login
-if ($endpoint_parts[0] !== 'login') {
+// Check authentication for all endpoints except login and system endpoints
+if ($endpoint_parts[0] !== 'login' && $endpoint_parts[0] !== 'system') {
     if (!authenticate_request()) {
         respond_error('Unauthorized access', 401);
     }
@@ -80,10 +79,36 @@ if ($endpoint_parts[0] !== 'login') {
 
 // Handle API requests based on endpoint and method
 switch ($endpoint_parts[0]) {
+    // System status and diagnostics endpoints
+    case 'system':
+        if ($endpoint_parts[1] === 'db-test') {
+            $result = db_test_connection();
+            
+            $response = [
+                'success' => $result['status'],
+                'data' => null,
+                'message' => $result['message']
+            ];
+            
+            if (!$result['status']) {
+                http_response_code(500);
+            }
+        }
+        else {
+            respond_error('Unknown system endpoint', 404);
+        }
+        break;
+
     // User authentication endpoint
     case 'login':
         if ($method !== 'POST') {
             respond_error('Method not allowed', 405);
+        }
+        
+        // Before attempting login, test DB connection
+        $db_test = db_test_connection();
+        if (!$db_test['status']) {
+            respond_error('Database error: ' . $db_test['message'], 500);
         }
         
         if (!isset($input['email']) || !isset($input['password'])) {
