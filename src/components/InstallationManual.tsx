@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -479,8 +478,8 @@ sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker
 sudo chmod +x /usr/local/bin/docker-compose
 
 # Adicione seu usuário ao grupo docker
-sudo usermod -aG docker ${USER}
-su - ${USER}
+sudo usermod -aG docker \${USER}
+su - \${USER}
 
 # Verifique as instalações
 docker --version
@@ -544,9 +543,9 @@ services:
     image: postgres:14
     container_name: tracking_postgres
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: \${DB_NAME}
+      POSTGRES_USER: \${DB_USER}
+      POSTGRES_PASSWORD: \${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
