@@ -5,6 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
 import { Clipboard, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import InstallationManual from '@/components/InstallationManual';
 
 const InstallationGuidePage: React.FC = () => {
   const copyToClipboard = (text: string) => {
@@ -23,6 +26,22 @@ const InstallationGuidePage: React.FC = () => {
             <p className="text-muted-foreground mt-1">
               Guia passo a passo para instalação e configuração do sistema de rastreamento
             </p>
+            <div className="flex items-center gap-2 mt-4">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline">Ver Manual Completo</Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
+                  <SheetHeader className="mb-4">
+                    <SheetTitle>Manual de Instalação Completo</SheetTitle>
+                    <SheetDescription>
+                      Instruções detalhadas para instalação em diferentes ambientes
+                    </SheetDescription>
+                  </SheetHeader>
+                  <InstallationManual />
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
         
@@ -55,7 +74,8 @@ const InstallationGuidePage: React.FC = () => {
                       <h4 className="font-medium">Software</h4>
                       <ul className="mt-2 space-y-1 text-sm">
                         <li>• Ubuntu 22.04 LTS</li>
-                        <li>• PHP 8.0 ou superior</li>
+                        <li>• PHP 8.1 ou superior</li>
+                        <li>• Apache 2.4 ou superior</li>
                         <li>• MySQL 8.0 ou superior</li>
                         <li>• Node.js 18 ou superior</li>
                       </ul>
@@ -80,24 +100,41 @@ const InstallationGuidePage: React.FC = () => {
                     </button>
                   </div>
                   
-                  <h3 className="text-lg font-semibold">2. Instalar PHP 8.1</h3>
+                  <h3 className="text-lg font-semibold">2. Instalar Apache</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
-                      sudo apt install software-properties-common -y{"\n"}
-                      sudo add-apt-repository ppa:ondrej/php -y{"\n"}
-                      sudo apt update{"\n"}
-                      sudo apt install php8.1 php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath -y
+                      sudo apt install apache2 -y{"\n"}
+                      sudo systemctl start apache2{"\n"}
+                      sudo systemctl enable apache2
                     </pre>
                     <button 
                       className="absolute top-2 right-2 p-1 rounded-md hover:bg-gray-200"
-                      onClick={() => copyToClipboard('sudo apt install software-properties-common -y\nsudo add-apt-repository ppa:ondrej/php -y\nsudo apt update\nsudo apt install php8.1 php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath -y')}
+                      onClick={() => copyToClipboard('sudo apt install apache2 -y\nsudo systemctl start apache2\nsudo systemctl enable apache2')}
                       title="Copiar comando"
                     >
                       <Clipboard size={14} />
                     </button>
                   </div>
                   
-                  <h3 className="text-lg font-semibold">3. Instalar MySQL</h3>
+                  <h3 className="text-lg font-semibold">3. Instalar PHP 8.1</h3>
+                  <div className="bg-gray-100 p-3 rounded-md relative">
+                    <pre className="text-sm overflow-x-auto">
+                      sudo apt install software-properties-common -y{"\n"}
+                      sudo add-apt-repository ppa:ondrej/php -y{"\n"}
+                      sudo apt update{"\n"}
+                      sudo apt install php8.1 libapache2-mod-php8.1 php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath -y{"\n"}
+                      sudo systemctl restart apache2
+                    </pre>
+                    <button 
+                      className="absolute top-2 right-2 p-1 rounded-md hover:bg-gray-200"
+                      onClick={() => copyToClipboard('sudo apt install software-properties-common -y\nsudo add-apt-repository ppa:ondrej/php -y\nsudo apt update\nsudo apt install php8.1 libapache2-mod-php8.1 php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath -y\nsudo systemctl restart apache2')}
+                      title="Copiar comando"
+                    >
+                      <Clipboard size={14} />
+                    </button>
+                  </div>
+                  
+                  <h3 className="text-lg font-semibold">4. Instalar MySQL</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
                       sudo apt install mysql-server -y{"\n"}
@@ -112,7 +149,7 @@ const InstallationGuidePage: React.FC = () => {
                     </button>
                   </div>
                   
-                  <h3 className="text-lg font-semibold">4. Instalar Node.js</h3>
+                  <h3 className="text-lg font-semibold">5. Instalar Node.js</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
                       curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -{"\n"}
@@ -151,30 +188,93 @@ const InstallationGuidePage: React.FC = () => {
                     </button>
                   </div>
                   
-                  <h3 className="text-lg font-semibold">2. Importar Estrutura do Banco</h3>
+                  <h3 className="text-lg font-semibold">2. Configurar Virtual Host do Apache</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
-                      mysql -u tracking_user -p tracking_system {"<"} estrutura.sql
+                      sudo nano /etc/apache2/sites-available/tracking-system.conf
                     </pre>
                     <button 
                       className="absolute top-2 right-2 p-1 rounded-md hover:bg-gray-200"
-                      onClick={() => copyToClipboard('mysql -u tracking_user -p tracking_system < estrutura.sql')}
+                      onClick={() => copyToClipboard('sudo nano /etc/apache2/sites-available/tracking-system.conf')}
                       title="Copiar comando"
                     >
                       <Clipboard size={14} />
                     </button>
                   </div>
                   
-                  <h3 className="text-lg font-semibold">3. Configurar Servidor Web</h3>
                   <div className="bg-gray-100 p-3 rounded-md relative">
                     <pre className="text-sm overflow-x-auto">
-                      sudo apt install nginx -y{"\n"}
-                      sudo systemctl start nginx{"\n"}
-                      sudo systemctl enable nginx
+{`<VirtualHost *:80>
+    ServerName seu-dominio.com
+    ServerAlias www.seu-dominio.com
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/html/tracking-system/dist
+
+    <Directory /var/www/html/tracking-system/dist>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog \${APACHE_LOG_DIR}/tracking-system-error.log
+    CustomLog \${APACHE_LOG_DIR}/tracking-system-access.log combined
+
+    <Directory /var/www/html/tracking-system/api>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        RewriteEngine On
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule ^ index.php [QSA,L]
+    </Directory>
+</VirtualHost>`}
                     </pre>
                     <button 
                       className="absolute top-2 right-2 p-1 rounded-md hover:bg-gray-200"
-                      onClick={() => copyToClipboard('sudo apt install nginx -y\nsudo systemctl start nginx\nsudo systemctl enable nginx')}
+                      onClick={() => copyToClipboard(`<VirtualHost *:80>
+    ServerName seu-dominio.com
+    ServerAlias www.seu-dominio.com
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/html/tracking-system/dist
+
+    <Directory /var/www/html/tracking-system/dist>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog \${APACHE_LOG_DIR}/tracking-system-error.log
+    CustomLog \${APACHE_LOG_DIR}/tracking-system-access.log combined
+
+    <Directory /var/www/html/tracking-system/api>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        RewriteEngine On
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule ^ index.php [QSA,L]
+    </Directory>
+</VirtualHost>`)}
+                      title="Copiar VirtualHost"
+                    >
+                      <Clipboard size={14} />
+                    </button>
+                  </div>
+                  
+                  <h3 className="text-lg font-semibold">3. Ativar o Site e Módulos Necessários</h3>
+                  <div className="bg-gray-100 p-3 rounded-md relative">
+                    <pre className="text-sm overflow-x-auto">
+                      sudo a2ensite tracking-system.conf{"\n"}
+                      sudo a2enmod rewrite{"\n"}
+                      sudo systemctl restart apache2
+                    </pre>
+                    <button 
+                      className="absolute top-2 right-2 p-1 rounded-md hover:bg-gray-200"
+                      onClick={() => copyToClipboard('sudo a2ensite tracking-system.conf\nsudo a2enmod rewrite\nsudo systemctl restart apache2')}
                       title="Copiar comando"
                     >
                       <Clipboard size={14} />
@@ -185,15 +285,15 @@ const InstallationGuidePage: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center">
                       <CheckCircle size={16} className="text-green-500 mr-2" />
+                      <span>Verificar se Apache está funcionando: <code>sudo systemctl status apache2</code></span>
+                    </div>
+                    <div className="flex items-center">
+                      <CheckCircle size={16} className="text-green-500 mr-2" />
                       <span>Verificar se PHP está funcionando: <code>php -v</code></span>
                     </div>
                     <div className="flex items-center">
                       <CheckCircle size={16} className="text-green-500 mr-2" />
                       <span>Verificar se MySQL está funcionando: <code>sudo systemctl status mysql</code></span>
-                    </div>
-                    <div className="flex items-center">
-                      <CheckCircle size={16} className="text-green-500 mr-2" />
-                      <span>Verificar se Nginx está funcionando: <code>sudo systemctl status nginx</code></span>
                     </div>
                   </div>
                 </div>

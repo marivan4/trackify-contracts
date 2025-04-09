@@ -43,18 +43,18 @@ sudo update-locale LANG=pt_BR.UTF-8 LC_ALL=pt_BR.UTF-8
 
 ## 2. Instalação de Dependências Principais
 
-### 2.1. Instalação do Servidor Web (Nginx)
+### 2.1. Instalação do Servidor Web (Apache)
 
 \`\`\`bash
-# Instale o Nginx
-sudo apt install -y nginx
+# Instale o Apache
+sudo apt install -y apache2
 
 # Habilite e inicie o serviço
-sudo systemctl enable nginx
-sudo systemctl start nginx
+sudo systemctl enable apache2
+sudo systemctl start apache2
 
 # Configure o firewall (se estiver ativo)
-sudo ufw allow 'Nginx Full'
+sudo ufw allow 'Apache Full'
 \`\`\`
 
 ### 2.2. Instalação do PHP 8.1
@@ -65,10 +65,28 @@ sudo add-apt-repository ppa:ondrej/php -y
 sudo apt update
 
 # Instale PHP e extensões necessárias
-sudo apt install -y php8.1 php8.1-cli php8.1-fpm php8.1-mysql php8.1-pgsql php8.1-gd php8.1-curl php8.1-mbstring php8.1-xml php8.1-bcmath php8.1-intl php8.1-zip php8.1-soap
+sudo apt install -y php8.1 libapache2-mod-php8.1 php8.1-cli php8.1-mysql php8.1-pgsql php8.1-gd php8.1-curl php8.1-mbstring php8.1-xml php8.1-bcmath php8.1-intl php8.1-zip php8.1-soap
 
 # Verifique a instalação
 php -v
+
+# Configure o PHP para o Apache
+sudo nano /etc/php/8.1/apache2/php.ini
+\`\`\`
+
+Atualize os seguintes valores no php.ini:
+
+\`\`\`
+upload_max_filesize = 20M
+post_max_size = 20M
+max_execution_time = 300
+memory_limit = 256M
+\`\`\`
+
+Reinicie o Apache após configurar o PHP:
+
+\`\`\`bash
+sudo systemctl restart apache2
 \`\`\`
 
 ### 2.3. Instalação do Node.js (para componentes frontend)
@@ -88,52 +106,51 @@ sudo npm install -g pm2
 
 ## 3. Instalação e Configuração do Banco de Dados
 
-### 3.1. Instalação do PostgreSQL
+### 3.1. Instalação do MySQL
 
 \`\`\`bash
-# Instale PostgreSQL
-sudo apt install -y postgresql postgresql-contrib
-
-# Verifique a instalação
-sudo systemctl status postgresql
+# Instale MySQL
+sudo apt install -y mysql-server
 
 # Inicie e habilite o serviço
-sudo systemctl enable postgresql
-sudo systemctl start postgresql
+sudo systemctl enable mysql
+sudo systemctl start mysql
+
+# Configure a segurança do MySQL
+sudo mysql_secure_installation
 \`\`\`
 
 ### 3.2. Configuração do Banco de Dados
 
 \`\`\`bash
-# Acesse o shell do PostgreSQL
-sudo -i -u postgres
+# Acesse o shell do MySQL
+sudo mysql
+
+# Crie um banco de dados para o sistema de rastreamento
+CREATE DATABASE trackingdb;
 
 # Crie um usuário para o sistema de rastreamento
-createuser --pwprompt trackadmin
-# Digite a senha quando solicitado (use uma senha segura)
+CREATE USER 'trackuser'@'localhost' IDENTIFIED BY 'senha_segura';
 
-# Crie o banco de dados
-createdb --owner=trackadmin trackingdb
+# Conceda privilégios ao usuário
+GRANT ALL PRIVILEGES ON trackingdb.* TO 'trackuser'@'localhost';
+FLUSH PRIVILEGES;
 
-# Saia do shell PostgreSQL
-exit
-
-# Configure as permissões do usuário
-sudo -u postgres psql -c "ALTER USER trackadmin WITH SUPERUSER;"
+# Saia do shell MySQL
+EXIT;
 \`\`\`
 
 ### 3.3. Importação da Estrutura do Banco de Dados
 
 \`\`\`bash
 # A partir do diretório do projeto
-cd /caminho/para/sistema-rastreamento
+cd /var/www/html/sistema-rastreamento
 
 # Importe o esquema do banco de dados
-sudo -u postgres psql trackingdb < src/utils/database.sql
+mysql -u trackuser -p trackingdb < src/utils/database.sql
 
 # Verifique se as tabelas foram criadas
-sudo -u postgres psql -c "\\c trackingdb"
-sudo -u postgres psql -c "\\dt"
+mysql -u trackuser -p -e "USE trackingdb; SHOW TABLES;"
 \`\`\`
 
 ## 4. Configuração do Sistema de Rastreamento
@@ -143,20 +160,20 @@ sudo -u postgres psql -c "\\dt"
 \`\`\`bash
 # Clone o repositório do sistema (substitua pela URL real do seu repositório)
 sudo apt install -y git
-cd /var/www
+cd /var/www/html
 sudo git clone https://github.com/sua-empresa/sistema-rastreamento.git
 cd sistema-rastreamento
 
 # Configure as permissões
-sudo chown -R www-data:www-data /var/www/sistema-rastreamento
-sudo chmod -R 755 /var/www/sistema-rastreamento
+sudo chown -R www-data:www-data /var/www/html/sistema-rastreamento
+sudo chmod -R 755 /var/www/html/sistema-rastreamento
 \`\`\`
 
 ### 4.2. Configuração do Frontend
 
 \`\`\`bash
 # Instale as dependências do frontend
-cd /var/www/sistema-rastreamento
+cd /var/www/html/sistema-rastreamento
 sudo npm install
 
 # Compile os assets para produção
@@ -172,7 +189,7 @@ sudo pm2 save
 
 \`\`\`bash
 # Crie o arquivo de variáveis de ambiente
-cd /var/www/sistema-rastreamento
+cd /var/www/html/sistema-rastreamento
 sudo cp .env.example .env
 sudo nano .env
 \`\`\`
@@ -181,11 +198,11 @@ Adicione as seguintes variáveis (ajuste conforme necessário):
 
 \`\`\`
 # Configurações do Banco de Dados
-DB_TYPE=postgres
+DB_TYPE=mysql
 DB_HOST=localhost
-DB_PORT=5432
-DB_USER=trackadmin
-DB_PASSWORD=sua_senha_segura
+DB_PORT=3306
+DB_USER=trackuser
+DB_PASSWORD=senha_segura
 DB_NAME=trackingdb
 
 # Configurações da API
@@ -197,68 +214,76 @@ WHATSAPP_API_URL=https://whatsapp-api-url
 WHATSAPP_API_TOKEN=seu_token_whatsapp
 \`\`\`
 
-### 4.4. Configuração do Nginx como Proxy Reverso
+### 4.4. Configuração do Apache como Virtual Host
 
 \`\`\`bash
 # Crie um arquivo de configuração para o site
-sudo nano /etc/nginx/sites-available/tracking-system
+sudo nano /etc/apache2/sites-available/tracking-system.conf
 \`\`\`
 
 Adicione a seguinte configuração:
 
 \`\`\`
-server {
-    listen 80;
-    server_name seu-dominio.com www.seu-dominio.com;
-    root /var/www/sistema-rastreamento/dist;
-    index index.html;
+<VirtualHost *:80>
+    ServerName seu-dominio.com
+    ServerAlias www.seu-dominio.com
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/html/sistema-rastreamento/dist
 
-    # Frontend estático
-    location / {
-        try_files $uri $uri/ /index.html;
-        add_header Cache-Control "public, max-age=3600";
-    }
+    <Directory /var/www/html/sistema-rastreamento/dist>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        # Para roteamento SPA (Single Page Application)
+        <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteBase /
+            RewriteRule ^index\.html$ - [L]
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteCond %{REQUEST_FILENAME} !-d
+            RewriteRule . /index.html [L]
+        </IfModule>
+    </Directory>
 
-    # API backend
-    location /api {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
+    # API backend via proxy
+    ProxyRequests Off
+    ProxyPreserveHost On
+    ProxyVia Full
+
+    <Location /api>
+        ProxyPass http://localhost:3000
+        ProxyPassReverse http://localhost:3000
+    </Location>
 
     # Configurações para upload de arquivos grandes
-    client_max_body_size 20M;
-
-    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg)$ {
-        expires 30d;
-        add_header Cache-Control "public, max-age=2592000";
-    }
-
-    # Segurança - evitar acesso a arquivos ocultos
-    location ~ /\. {
-        deny all;
-        access_log off;
-        log_not_found off;
-    }
+    <IfModule mod_proxy.c>
+        ProxyTimeout 600
+        ProxyBadHeader Ignore
+    </IfModule>
 
     # Logs
-    access_log /var/log/nginx/tracking-access.log;
-    error_log /var/log/nginx/tracking-error.log;
-}
+    ErrorLog \${APACHE_LOG_DIR}/tracking-error.log
+    CustomLog \${APACHE_LOG_DIR}/tracking-access.log combined
+</VirtualHost>
 \`\`\`
 
-Ative o site e reinicie o Nginx:
+Ative o site e os módulos necessários, depois reinicie o Apache:
 
 \`\`\`bash
-sudo ln -s /etc/nginx/sites-available/tracking-system /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
+# Habilite módulos necessários
+sudo a2enmod rewrite
+sudo a2enmod proxy
+sudo a2enmod proxy_http
+
+# Ative o site
+sudo a2ensite tracking-system.conf
+
+# Verifique a configuração
+sudo apache2ctl configtest
+
+# Reinicie o Apache
+sudo systemctl restart apache2
 \`\`\`
 
 ## 5. Configuração de SSL (HTTPS)
@@ -267,10 +292,10 @@ sudo systemctl restart nginx
 
 \`\`\`bash
 # Instale o Certbot
-sudo apt install -y certbot python3-certbot-nginx
+sudo apt install -y certbot python3-certbot-apache
 
 # Obtenha e configure o certificado SSL
-sudo certbot --nginx -d seu-dominio.com -d www.seu-dominio.com
+sudo certbot --apache -d seu-dominio.com -d www.seu-dominio.com
 
 # Configure a renovação automática
 sudo systemctl status certbot.timer
@@ -285,16 +310,42 @@ sudo systemctl status certbot.timer
 sudo mkdir -p /var/backups/tracking_system
 
 # Configure as permissões
-sudo chown -R postgres:postgres /var/backups/tracking_system
+sudo chown -R www-data:www-data /var/backups/tracking_system
 \`\`\`
 
 ### 6.2. Configuração do Script de Backup
 
 \`\`\`bash
-# Copie o script de backup para os scripts de cron diários
-sudo cp /var/www/sistema-rastreamento/src/utils/backup_database.sh /etc/cron.daily/backup-tracking-db
+# Crie o script de backup
+sudo nano /etc/cron.daily/backup-tracking-db
+\`\`\`
 
-# Torne o script executável
+Adicione o seguinte conteúdo:
+
+\`\`\`bash
+#!/bin/bash
+DATE=\$(date +%Y-%m-%d)
+BACKUP_DIR="/var/backups/tracking_system"
+
+# Backup do banco de dados
+mysqldump -u trackuser -p'senha_segura' trackingdb > \$BACKUP_DIR/trackingdb_\$DATE.sql
+
+# Comprima o backup
+gzip -f \$BACKUP_DIR/trackingdb_\$DATE.sql
+
+# Remova backups com mais de 30 dias
+find \$BACKUP_DIR -name "trackingdb_*.sql.gz" -type f -mtime +30 -delete
+
+# Backup dos arquivos do site
+tar -czf \$BACKUP_DIR/tracking_files_\$DATE.tar.gz -C /var/www/html sistema-rastreamento
+
+# Remova backups de arquivos com mais de 7 dias
+find \$BACKUP_DIR -name "tracking_files_*.tar.gz" -type f -mtime +7 -delete
+\`\`\`
+
+Torne o script executável:
+
+\`\`\`bash
 sudo chmod +x /etc/cron.daily/backup-tracking-db
 
 # Teste o script (opcional)
@@ -313,8 +364,7 @@ sudo ufw default allow outgoing
 
 # Permita SSH, HTTP e HTTPS
 sudo ufw allow ssh
-sudo ufw allow http
-sudo ufw allow https
+sudo ufw allow 'Apache Full'
 
 # Ative o firewall
 sudo ufw enable
@@ -334,19 +384,51 @@ sudo nano /etc/fail2ban/jail.local
 sudo systemctl restart fail2ban
 \`\`\`
 
+### 7.3. Hardening do Apache
+
+\`\`\`bash
+# Edite o arquivo de configuração principal do Apache
+sudo nano /etc/apache2/conf-available/security.conf
+\`\`\`
+
+Atualize as seguintes configurações:
+
+\`\`\`
+# Desabilitar exposição de informações do servidor
+ServerTokens Prod
+ServerSignature Off
+
+# Desabilitar rastreamento de links simbólicos
+<Directory />
+    Options -Indexes -FollowSymLinks
+    AllowOverride None
+    Require all denied
+</Directory>
+
+# Prevenção contra clickjacking
+Header always append X-Frame-Options SAMEORIGIN
+\`\`\`
+
+Ative as configurações e reinicie o Apache:
+
+\`\`\`bash
+sudo a2enmod headers
+sudo systemctl restart apache2
+\`\`\`
+
 ## 8. Inicialização e Verificação do Sistema
 
 ### 8.1. Inicialização dos Serviços
 
 \`\`\`bash
 # Verifique se todos os serviços estão ativos
-sudo systemctl status nginx
-sudo systemctl status postgresql
+sudo systemctl status apache2
+sudo systemctl status mysql
 sudo pm2 status
 
 # Reinicie os serviços se necessário
-sudo systemctl restart nginx
-sudo systemctl restart postgresql
+sudo systemctl restart apache2
+sudo systemctl restart mysql
 sudo pm2 restart all
 \`\`\`
 
@@ -364,7 +446,7 @@ Acesse seu site em \`https://seu-dominio.com\` e faça login com as credenciais 
 O sistema segue a seguinte estrutura de diretórios:
 
 \`\`\`
-/var/www/sistema-rastreamento/
+/var/www/html/sistema-rastreamento/
 ├── dist/                    # Arquivos estáticos compilados (gerados por 'npm run build')
 ├── node_modules/            # Dependências do Node.js
 ├── public/                  # Arquivos públicos
@@ -394,12 +476,12 @@ O sistema segue a seguinte estrutura de diretórios:
 ### 10.1. Logs do Sistema
 
 \`\`\`bash
-# Logs do Nginx
-sudo tail -f /var/log/nginx/tracking-access.log
-sudo tail -f /var/log/nginx/tracking-error.log
+# Logs do Apache
+sudo tail -f /var/log/apache2/tracking-access.log
+sudo tail -f /var/log/apache2/tracking-error.log
 
-# Logs do PostgreSQL
-sudo tail -f /var/log/postgresql/postgresql-14-main.log
+# Logs do MySQL
+sudo tail -f /var/log/mysql/error.log
 
 # Logs da aplicação Node.js
 pm2 logs tracking-frontend
@@ -425,7 +507,7 @@ sudo apt update
 sudo apt upgrade -y
 
 # Atualize o código do aplicativo
-cd /var/www/sistema-rastreamento
+cd /var/www/html/sistema-rastreamento
 sudo git pull
 
 # Instale/atualize dependências
@@ -442,7 +524,7 @@ sudo pm2 restart tracking-frontend
 
 \`\`\`bash
 # Execute migrações
-cd /var/www/sistema-rastreamento
+cd /var/www/html/sistema-rastreamento
 php src/utils/db_migration.php migrate
 \`\`\`
 
@@ -494,11 +576,11 @@ Crie a seguinte estrutura de arquivos:
 projeto-rastreamento/
 ├── docker-compose.yml
 ├── .env
-├── nginx/
-│   └── default.conf
+├── apache/
+│   └── vhost.conf
 ├── php/
 │   └── Dockerfile
-└── postgres/
+└── mysql/
     └── init.sql
 \`\`\`
 
@@ -510,22 +592,23 @@ projeto-rastreamento/
 version: '3.8'
 
 services:
-  nginx:
-    image: nginx:alpine
-    container_name: tracking_nginx
+  apache:
+    image: httpd:2.4-alpine
+    container_name: tracking_apache
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./apache/vhost.conf:/usr/local/apache2/conf/extra/vhost.conf
       - ./:/var/www/html
-      - ./nginx/certbot/conf:/etc/letsencrypt
-      - ./nginx/certbot/www:/var/www/certbot
+      - ./apache/certbot/conf:/etc/letsencrypt
+      - ./apache/certbot/www:/var/www/certbot
     depends_on:
       - php
     networks:
       - tracking_network
     restart: unless-stopped
+    command: sh -c "echo 'Include conf/extra/vhost.conf' >> /usr/local/apache2/conf/httpd.conf && httpd-foreground"
 
   php:
     build:
@@ -534,23 +617,24 @@ services:
     volumes:
       - ./:/var/www/html
     depends_on:
-      - postgres
+      - mysql
     networks:
       - tracking_network
     restart: unless-stopped
 
-  postgres:
-    image: postgres:14
-    container_name: tracking_postgres
+  mysql:
+    image: mysql:8.0
+    container_name: tracking_mysql
     environment:
-      POSTGRES_DB: \${DB_NAME}
-      POSTGRES_USER: \${DB_USER}
-      POSTGRES_PASSWORD: \${DB_PASSWORD}
+      MYSQL_DATABASE: \${DB_NAME}
+      MYSQL_USER: \${DB_USER}
+      MYSQL_PASSWORD: \${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: \${DB_ROOT_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5432:5432"
+      - "3306:3306"
     networks:
       - tracking_network
     restart: unless-stopped
@@ -573,7 +657,7 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  mysql_data:
 \`\`\`
 
 ### 3.2. Arquivo .env
@@ -581,9 +665,10 @@ volumes:
 \`\`\`
 # Configurações do Banco de Dados
 DB_NAME=trackingdb
-DB_USER=trackadmin
-DB_PASSWORD=sua_senha_segura
-DB_HOST=postgres
+DB_USER=trackuser
+DB_PASSWORD=senha_segura
+DB_ROOT_PASSWORD=root_senha_segura
+DB_HOST=mysql
 
 # Configurações da Aplicação
 APP_URL=http://localhost
@@ -594,41 +679,47 @@ WHATSAPP_API_URL=https://whatsapp-api-url
 WHATSAPP_API_TOKEN=seu_token_whatsapp
 \`\`\`
 
-### 3.3. Arquivo nginx/default.conf
+### 3.3. Arquivo apache/vhost.conf
 
-\`\`\`nginx
-server {
-    listen 80;
-    server_name localhost;
-    root /var/www/html/dist;
-    index index.html;
+\`\`\`apache
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+LoadModule rewrite_module modules/mod_rewrite.so
 
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /api {
-        proxy_pass http://node:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    location ~ \\.php$ {
-        fastcgi_pass php:9000;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-}
+<VirtualHost *:80>
+    ServerName localhost
+    DocumentRoot /var/www/html/dist
+    
+    <Directory /var/www/html/dist>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        RewriteEngine On
+        RewriteBase /
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+    </Directory>
+    
+    ProxyRequests Off
+    ProxyPreserveHost On
+    
+    <Location /api>
+        ProxyPass http://node:3000
+        ProxyPassReverse http://node:3000
+    </Location>
+    
+    ErrorLog /var/log/apache2/tracking-error.log
+    CustomLog /var/log/apache2/tracking-access.log combined
+</VirtualHost>
 \`\`\`
 
 ### 3.4. Arquivo php/Dockerfile
 
 \`\`\`dockerfile
-FROM php:8.1-fpm
+FROM php:8.1-apache
 
 # Instale extensões PHP necessárias
 RUN apt-get update && apt-get install -y \
@@ -640,8 +731,8 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
     pdo \
-    pdo_pgsql \
-    pgsql \
+    pdo_mysql \
+    mysqli \
     gd \
     zip
 
@@ -653,10 +744,13 @@ RUN echo "upload_max_filesize = 20M" >> "$PHP_INI_DIR/php.ini" \
     && echo "post_max_size = 20M" >> "$PHP_INI_DIR/php.ini" \
     && echo "max_execution_time = 300" >> "$PHP_INI_DIR/php.ini"
 
+# Ative os módulos do Apache
+RUN a2enmod rewrite proxy proxy_http
+
 WORKDIR /var/www/html
 \`\`\`
 
-### 3.5. Arquivo postgres/init.sql
+### 3.5. Arquivo mysql/init.sql
 
 Este arquivo deve conter o mesmo conteúdo do arquivo database.sql do projeto.
 
@@ -680,17 +774,17 @@ docker-compose logs -f
 sudo apt install -y certbot
 
 # Obtenha certificados
-sudo certbot certonly --webroot -w ./nginx/certbot/www -d seu-dominio.com -d www.seu-dominio.com
+sudo certbot certonly --webroot -w ./apache/certbot/www -d seu-dominio.com -d www.seu-dominio.com
 
 # Copie os certificados para o diretório do Docker
-sudo cp -L /etc/letsencrypt/live/seu-dominio.com/fullchain.pem ./nginx/certbot/conf/
-sudo cp -L /etc/letsencrypt/live/seu-dominio.com/privkey.pem ./nginx/certbot/conf/
+sudo cp -L /etc/letsencrypt/live/seu-dominio.com/fullchain.pem ./apache/certbot/conf/
+sudo cp -L /etc/letsencrypt/live/seu-dominio.com/privkey.pem ./apache/certbot/conf/
 
-# Atualize a configuração do Nginx para HTTPS
-# Edite o arquivo nginx/default.conf para incluir o bloco de servidor HTTPS
+# Atualize a configuração do Apache para HTTPS
+# Edite o arquivo apache/vhost.conf para incluir o bloco de servidor HTTPS
 
-# Reinicie o container do Nginx
-docker-compose restart nginx
+# Reinicie o container do Apache
+docker-compose restart apache
 \`\`\`
 
 ## 6. Comandos Úteis
@@ -715,13 +809,13 @@ docker-compose logs -f [nome_do_serviço]
 
 \`\`\`bash
 # Acessar o banco de dados
-docker-compose exec postgres psql -U trackadmin -d trackingdb
+docker-compose exec mysql mysql -u trackuser -p trackingdb
 
 # Executar backup do banco de dados
-docker-compose exec postgres pg_dump -U trackadmin trackingdb > backup_$(date +%Y%m%d).sql
+docker-compose exec mysql mysqldump -u trackuser -p trackingdb > backup_$(date +%Y%m%d).sql
 
 # Restaurar backup
-cat backup.sql | docker-compose exec -T postgres psql -U trackadmin -d trackingdb
+cat backup.sql | docker-compose exec -T mysql mysql -u trackuser -p trackingdb
 \`\`\`
 
 ### 6.3. Executando Comandos do Projeto
@@ -821,7 +915,7 @@ Para qualquer dúvida ou suporte, entre em contato:
             <TabsList className="grid grid-cols-2 mb-4">
               <TabsTrigger value="ubuntu" className="flex items-center gap-2">
                 <Server size={16} />
-                <span>Ubuntu 22.04</span>
+                <span>Ubuntu 22.04 com Apache</span>
               </TabsTrigger>
               <TabsTrigger value="docker" className="flex items-center gap-2">
                 <FolderTree size={16} />
@@ -836,7 +930,7 @@ Para qualquer dúvida ou suporte, entre em contato:
                   <div>
                     <h4 className="font-medium text-amber-800">Dica de Instalação</h4>
                     <p className="text-sm text-amber-700">
-                      Este manual é para instalação completa em servidor Ubuntu 22.04 LTS. O manual inclui todos os passos necessários para configurar o ambiente de produção, incluindo banco de dados, servidor web e configurações de segurança.
+                      Este manual é para instalação completa em servidor Ubuntu 22.04 LTS com Apache e PHP 8.1. O manual inclui todos os passos necessários para configurar o ambiente de produção, incluindo banco de dados, servidor web e configurações de segurança.
                     </p>
                   </div>
                 </div>
@@ -856,7 +950,7 @@ Para qualquer dúvida ou suporte, entre em contato:
                   <div>
                     <h4 className="font-medium text-blue-800">Docker & Docker Compose</h4>
                     <p className="text-sm text-blue-700">
-                      Esta versão do manual utiliza Docker e Docker Compose para uma instalação simplificada e portável. Ideal para ambientes de desenvolvimento e produção com configuração padronizada.
+                      Esta versão do manual utiliza Docker e Docker Compose para uma instalação simplificada e portável. Configuramos Apache ao invés de Nginx para compatibilidade com aplicações PHP tradicionais.
                     </p>
                   </div>
                 </div>
@@ -885,7 +979,7 @@ Para qualquer dúvida ou suporte, entre em contato:
           <Database size={24} className="text-blue-500 mb-2" />
           <h3 className="font-medium">Configuração do Banco</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Instruções detalhadas para configuração do PostgreSQL e importação do esquema.
+            Instruções detalhadas para configuração do MySQL e importação do esquema.
           </p>
         </div>
         
