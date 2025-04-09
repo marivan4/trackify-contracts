@@ -209,11 +209,82 @@ CREATE TABLE IF NOT EXISTS `installation_checklists` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------
+-- Table `whatsapp_configurations` (NEW TABLE)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `whatsapp_configurations` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `base_url` VARCHAR(255) NOT NULL,
+  `api_key` VARCHAR(255) NOT NULL,
+  `instance` VARCHAR(100) NOT NULL,
+  `is_connected` TINYINT NOT NULL DEFAULT 0,
+  `last_connected` TIMESTAMP NULL,
+  `created_by` INT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `fk_whatsapp_configurations_users_idx` (`created_by` ASC),
+  CONSTRAINT `fk_whatsapp_configurations_users`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `users` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- Table `role_privileges` (NEW TABLE)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `role_privileges` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `role` ENUM('admin', 'manager', 'user') NOT NULL,
+  `privilege` VARCHAR(50) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `role_privilege_unique` (`role`, `privilege`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
 -- Default Admin User
 -- -----------------------------------------------------
 INSERT INTO `users` (`name`, `email`, `phone`, `password`, `role`) VALUES
 ('Admin', 'admin@sistema-rastreamento.com.br', '(11) 98765-4321', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
 -- Default password is 'password'
+
+-- -----------------------------------------------------
+-- Default WhatsApp Configuration
+-- -----------------------------------------------------
+INSERT INTO `whatsapp_configurations` (`base_url`, `api_key`, `instance`, `created_by`) VALUES
+('https://evolutionapi.gpstracker-16.com.br', 'd9919cda7e370839d33b8946584dac93', 'assas', 1);
+
+-- -----------------------------------------------------
+-- Default Role Privileges
+-- -----------------------------------------------------
+-- Admin privileges
+INSERT INTO `role_privileges` (`role`, `privilege`) VALUES
+('admin', 'view_clients'),
+('admin', 'edit_clients'),
+('admin', 'create_clients'),
+('admin', 'delete_clients'),
+('admin', 'view_contracts'),
+('admin', 'edit_contracts'),
+('admin', 'create_contracts'),
+('admin', 'delete_contracts'),
+('admin', 'use_whatsapp'),
+('admin', 'configure_whatsapp');
+
+-- Manager privileges
+INSERT INTO `role_privileges` (`role`, `privilege`) VALUES
+('manager', 'view_clients'),
+('manager', 'edit_clients'),
+('manager', 'create_clients'),
+('manager', 'view_contracts'),
+('manager', 'edit_contracts'),
+('manager', 'use_whatsapp');
+
+-- User privileges
+INSERT INTO `role_privileges` (`role`, `privilege`) VALUES
+('user', 'view_clients'),
+('user', 'view_contracts');
 
 -- -----------------------------------------------------
 -- Example Triggers
@@ -266,3 +337,4 @@ BEGIN
     END IF;
 END$$
 DELIMITER ;
+

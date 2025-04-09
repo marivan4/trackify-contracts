@@ -33,14 +33,115 @@ export const formatPhoneNumber = (phone: string): string => {
 };
 
 /**
+ * Checks the connection state of the WhatsApp instance
+ * @param baseUrl The base URL of the API
+ * @param instance The instance name
+ * @param apiKey The API key
+ * @returns A promise that resolves to a boolean indicating if the instance is connected
+ */
+export const checkWhatsAppConnectionState = async (
+  baseUrl: string,
+  instance: string,
+  apiKey: string
+): Promise<boolean> => {
+  try {
+    const response = await fetch(`${baseUrl}/instance/connectionState/${instance}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': apiKey
+      }
+    });
+    
+    const data = await response.json();
+    console.log('Connection state response:', data);
+    
+    // The actual structure depends on the API, but generally:
+    // connected, isConnected, state: 'CONNECTED', etc.
+    return data.state === 'CONNECTED' || data.connected === true || data.isConnected === true;
+  } catch (error) {
+    console.error('Error checking WhatsApp connection state:', error);
+    return false;
+  }
+};
+
+/**
+ * Restarts the WhatsApp instance
+ * @param baseUrl The base URL of the API
+ * @param instance The instance name
+ * @param apiKey The API key
+ * @returns A promise that resolves to a boolean indicating if the restart was successful
+ */
+export const restartWhatsAppInstance = async (
+  baseUrl: string,
+  instance: string,
+  apiKey: string
+): Promise<boolean> => {
+  try {
+    const response = await fetch(`${baseUrl}/instance/restart/${instance}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': apiKey
+      }
+    });
+    
+    const data = await response.json();
+    console.log('Restart response:', data);
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Error restarting WhatsApp instance:', error);
+    return false;
+  }
+};
+
+/**
+ * Generates a QR code for connecting to WhatsApp
+ * @param baseUrl The base URL of the API
+ * @param instance The instance name
+ * @param apiKey The API key
+ * @returns A promise that resolves to the QR code URL or null if failed
+ */
+export const generateWhatsAppQRCode = async (
+  baseUrl: string,
+  instance: string,
+  apiKey: string
+): Promise<string | null> => {
+  try {
+    const response = await fetch(`${baseUrl}/instance/qr/${instance}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': apiKey
+      }
+    });
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    // Assuming the API returns a direct image or a URL to the QR code
+    // Implementation depends on the actual API response format
+    const data = await response.json();
+    return data.qrcode || `${baseUrl}/instance/qr/${instance}`;
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    return null;
+  }
+};
+
+/**
  * Sends a text message via WhatsApp API
  * @param phone The recipient's phone number
  * @param text The text message to send
+ * @param config WhatsApp configuration object
  * @returns A promise that resolves to true if the message was sent successfully
  */
 export const sendWhatsAppMessage = async (
   phone: string, 
-  text: string
+  text: string,
+  config: { baseUrl: string, apiKey: string, instance: string }
 ): Promise<boolean> => {
   // Validate phone number
   const formattedPhone = formatPhoneNumber(phone);
@@ -50,9 +151,8 @@ export const sendWhatsAppMessage = async (
     return false;
   }
   
-  // Corrected URL - removed double https://
-  const apiUrl = 'https://evolutionapi.gpstracker-16.com.br/message/sendText/assas';
-  const apiKey = 'A80892194E8E-401D-BDC2-763C9430A09E';
+  const apiUrl = `${config.baseUrl}/message/sendText/${config.instance}`;
+  const apiKey = config.apiKey;
   
   const payload = {
     number: formattedPhone,
@@ -118,13 +218,15 @@ export const sendWhatsAppMessage = async (
  * Sends a contract notification via WhatsApp
  * @param phone The recipient's phone number
  * @param contractId The ID of the contract
+ * @param config WhatsApp configuration object
  * @returns A promise that resolves to true if the message was sent successfully
  */
 export const sendContractViaWhatsApp = async (
   phone: string, 
-  contractId: string
+  contractId: string,
+  config: { baseUrl: string, apiKey: string, instance: string }
 ): Promise<boolean> => {
   const message = `Seu contrato de rastreamento veicular (ID: ${contractId}) está disponível para visualização em: https://sistema-rastreamento.com.br/contratos/${contractId}`;
   
-  return await sendWhatsAppMessage(phone, message);
+  return await sendWhatsAppMessage(phone, message, config);
 };

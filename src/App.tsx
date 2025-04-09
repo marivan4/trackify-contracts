@@ -20,6 +20,7 @@ import VehicleChecklistPage from "./pages/VehicleChecklistPage";
 import VehicleChecklistsPage from "./pages/VehicleChecklistsPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import AccessDeniedPage from "./pages/AccessDeniedPage";
+import WhatsAppConnectionPage from "./pages/WhatsAppConnectionPage";
 import NotFound from "./pages/NotFound";
 
 // Create a client
@@ -109,6 +110,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <InstallationGuidePage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/whatsapp" 
+              element={
+                <ProtectedRoute requireAdmin>
+                  <WhatsAppConnectionPage />
                 </ProtectedRoute>
               } 
             />

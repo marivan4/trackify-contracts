@@ -6,11 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  allowedRoles?: ('admin' | 'client')[];
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
-  requireAdmin = false 
+  requireAdmin = false,
+  allowedRoles = []
 }) => {
   const { isAuthenticated, isLoading, user } = useAuth();
 
@@ -23,7 +25,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" replace />;
   }
 
+  // Check if the route requires admin privileges
   if (requireAdmin && user?.role !== 'admin') {
+    return <Navigate to="/acesso-negado" replace />;
+  }
+
+  // Check if the user's role is in the list of allowed roles (if provided)
+  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
     return <Navigate to="/acesso-negado" replace />;
   }
 
