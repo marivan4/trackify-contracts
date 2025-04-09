@@ -207,5 +207,12 @@ export const sendContractViaWhatsApp = async (
   phone: string, 
   contractId: string
 ): Promise<boolean> => {
-  return await sendWhatsApp(phone, contractId);
+  // Default config that will be replaced by actual user/admin settings in a real application
+  const config = {
+    baseUrl: 'https://evolutionapi.gpstracker-16.com.br',
+    apiKey: 'd9919cda7e370839d33b8946584dac93',
+    instance: 'instance1'
+  };
+  
+  return await sendWhatsApp(phone, contractId, config);
 };
