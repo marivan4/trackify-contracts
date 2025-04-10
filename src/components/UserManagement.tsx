@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, UserPlus } from 'lucide-react';
+import { Plus, Pencil, Trash2, UserPlus, AlertCircle, Loader2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface User {
   id: number;
@@ -38,14 +39,97 @@ interface User {
   role: 'admin' | 'user';
 }
 
-// Mock data for users - in a real app, this would come from your backend
-const mockUsers: User[] = [
-  { id: 1, name: 'Admin User', email: 'admin@example.com', phone: '(11) 99999-9999', role: 'admin' },
-  { id: 2, name: 'Regular User', email: 'user@example.com', phone: '(11) 88888-8888', role: 'user' },
-];
+// API functions for users
+const fetchUsers = async (): Promise<User[]> => {
+  try {
+    const response = await fetch('/api/users', {
+      headers: {
+        'X-API-Key': 'TrackifySecretKey2025' // In a real app, this would be stored more securely
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Erro ao buscar usuários');
+    }
+    
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+};
+
+const createUser = async (userData: Omit<User, 'id'> & { password: string }): Promise<User> => {
+  try {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'TrackifySecretKey2025'
+      },
+      body: JSON.stringify(userData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Erro ao criar usuário');
+    }
+    
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
+};
+
+const updateUser = async (id: number, userData: Partial<User> & { password?: string }): Promise<User> => {
+  try {
+    const response = await fetch(`/api/users/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'TrackifySecretKey2025'
+      },
+      body: JSON.stringify(userData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Erro ao atualizar usuário');
+    }
+    
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error updating user:', error);
+    throw error;
+  }
+};
+
+const deleteUser = async (id: number): Promise<void> => {
+  try {
+    const response = await fetch(`/api/users/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'X-API-Key': 'TrackifySecretKey2025'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Erro ao excluir usuário');
+    }
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
+};
 
 const UserManagement = () => {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -58,6 +142,60 @@ const UserManagement = () => {
     password: '',
     confirmPassword: '',
     role: 'user' as 'admin' | 'user',
+  });
+  
+  // Fetch users data
+  const { 
+    data: users = [], 
+    isLoading, 
+    isError, 
+    error 
+  } = useQuery({
+    queryKey: ['users'],
+    queryFn: fetchUsers,
+    retry: 1
+  });
+  
+  // Mutations
+  const createUserMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setIsAddDialogOpen(false);
+      resetForm();
+      toast.success('Usuário adicionado com sucesso');
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao adicionar usuário: ${error.message}`);
+    }
+  });
+  
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, userData }: { id: number; userData: Partial<User> & { password?: string } }) => 
+      updateUser(id, userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setIsEditDialogOpen(false);
+      setSelectedUserId(null);
+      resetForm();
+      toast.success('Usuário atualizado com sucesso');
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao atualizar usuário: ${error.message}`);
+    }
+  });
+  
+  const deleteUserMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setIsDeleteDialogOpen(false);
+      setSelectedUserId(null);
+      toast.success('Usuário excluído com sucesso');
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao excluir usuário: ${error.message}`);
+    }
   });
   
   const resetForm = () => {
@@ -130,19 +268,15 @@ const UserManagement = () => {
       return;
     }
     
-    // In a real app, you would send this data to your API
-    const newUser: User = {
-      id: users.length + 1,
+    const userData = {
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
       role: formData.role,
+      password: formData.password
     };
     
-    setUsers([...users, newUser]);
-    setIsAddDialogOpen(false);
-    resetForm();
-    toast.success('Usuário adicionado com sucesso');
+    createUserMutation.mutate(userData);
   };
   
   const handleEditClick = (userId: number) => {
@@ -170,25 +304,23 @@ const UserManagement = () => {
       return;
     }
     
-    // Update user
-    const updatedUsers = users.map(user => {
-      if (user.id === selectedUserId) {
-        return {
-          ...user,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          role: formData.role,
-        };
-      }
-      return user;
-    });
+    const userData: Partial<User> & { password?: string } = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      role: formData.role,
+    };
     
-    setUsers(updatedUsers);
-    setIsEditDialogOpen(false);
-    setSelectedUserId(null);
-    resetForm();
-    toast.success('Usuário atualizado com sucesso');
+    // Only include password if it was provided
+    if (formData.password) {
+      if (formData.password !== formData.confirmPassword) {
+        toast.error('As senhas não coincidem');
+        return;
+      }
+      userData.password = formData.password;
+    }
+    
+    updateUserMutation.mutate({ id: selectedUserId, userData });
   };
   
   const handleDeleteClick = (userId: number) => {
@@ -210,13 +342,36 @@ const UserManagement = () => {
       return;
     }
     
-    // Delete user
-    const updatedUsers = users.filter(user => user.id !== selectedUserId);
-    setUsers(updatedUsers);
-    setIsDeleteDialogOpen(false);
-    setSelectedUserId(null);
-    toast.success('Usuário excluído com sucesso');
+    deleteUserMutation.mutate(selectedUserId);
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+        <p className="text-muted-foreground">Carregando usuários...</p>
+      </div>
+    );
+  }
+  
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <AlertCircle className="h-8 w-8 text-destructive mb-2" />
+        <h3 className="font-medium">Erro ao carregar usuários</h3>
+        <p className="text-muted-foreground mt-1">
+          {error instanceof Error ? error.message : 'Erro desconhecido'}
+        </p>
+        <Button 
+          className="mt-4" 
+          variant="outline" 
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+        >
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -306,11 +461,16 @@ const UserManagement = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={createUserMutation.isPending}>
                 Cancelar
               </Button>
-              <Button onClick={handleAddUser}>
-                Adicionar Usuário
+              <Button onClick={handleAddUser} disabled={createUserMutation.isPending}>
+                {createUserMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                    Processando...
+                  </>
+                ) : 'Adicionar Usuário'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -422,14 +582,43 @@ const UserManagement = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-password">Nova Senha (deixe em branco para manter a senha atual)</Label>
+                <Input
+                  id="edit-password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="******"
+                />
+              </div>
+              {formData.password && (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-confirmPassword">Confirmar Nova Senha</Label>
+                  <Input
+                    id="edit-confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    placeholder="******"
+                  />
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={updateUserMutation.isPending}>
               Cancelar
             </Button>
-            <Button onClick={handleEditUser}>
-              Salvar Alterações
+            <Button onClick={handleEditUser} disabled={updateUserMutation.isPending}>
+              {updateUserMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : 'Salvar Alterações'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -445,11 +634,16 @@ const UserManagement = () => {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={deleteUserMutation.isPending}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDeleteUser}>
-              Excluir
+            <Button variant="destructive" onClick={handleDeleteUser} disabled={deleteUserMutation.isPending}>
+              {deleteUserMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : 'Excluir'}
             </Button>
           </DialogFooter>
         </DialogContent>
